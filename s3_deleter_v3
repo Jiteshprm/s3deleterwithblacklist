@@ -1,0 +1,57 @@
+import struct
+
+def read_footer(file_path):
+    with open(file_path, 'rb') as file:
+        # Seek to the end of the file to find the footer size
+        file.seek(-8, 2)
+        footer_size = struct.unpack('Q', file.read(8))[0]
+
+        # Seek to the beginning of the footer
+        file.seek(-footer_size, 2)
+        footer = file.read(footer_size)
+
+    return footer
+
+def extract_metadata(footer):
+    # Parquet file format version 1.0 and 1.1 use Apache Thrift for metadata serialization
+
+    # Read the magic bytes
+    magic_bytes = footer[:4]
+    if magic_bytes != b'PAR1':
+        raise ValueError("Invalid Parquet file")
+
+    # Read the metadata length
+    metadata_length = struct.unpack('<I', footer[4:8])[0]
+
+    # Extract metadata from the Thrift structure
+    thrift_metadata = footer[8:8 + metadata_length]
+
+    # Parsing metadata fields (you may need to adjust based on the Parquet specification)
+    version_number = struct.unpack('<I', thrift_metadata[4:8])[0]
+    num_rows = struct.unpack('<Q', thrift_metadata[16:24])[0]
+    created_by_len = struct.unpack('<I', thrift_metadata[24:28])[0]
+    created_by = thrift_metadata[28:28 + created_by_len].decode('utf-8')
+
+    return {
+        'version_number': version_number,
+        'num_rows': num_rows,
+        'created_by': created_by
+        # Add more metadata fields as needed
+    }
+
+def main():
+    parquet_file_path = 'your_parquet_file.parquet'
+
+    # Read the footer of the Parquet file
+    footer_data = read_footer(parquet_file_path)
+
+    # Extract metadata from the footer
+    metadata = extract_metadata(footer_data)
+
+    # Print or use the extracted metadata
+    print("Parquet Version: {}".format(metadata['version_number']))
+    print("Number of Rows: {}".format(metadata['num_rows']))
+    print("Created By: {}".format(metadata['created_by']))
+
+if __name__ == "__main__":
+    main()
