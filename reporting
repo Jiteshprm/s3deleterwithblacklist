@@ -1,0 +1,14 @@
+def index_to_excel_column(index):
+    column = ""
+    
+    while index >= 0:
+        remainder = index % 26
+        column = chr(65 + remainder) + column
+        index = (index // 26) - 1
+
+    return column
+
+# Example usage:
+index = 25  # Replace with your desired index (starting from 0)
+column_letter = index_to_excel_column(index)
+print(f'Column letter for index {index}: {column_letter}')
